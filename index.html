@@ -500,10 +500,10 @@
         <p class="jump">ジャンプ（スペース）で車もボスの必殺も回避<br>ボスはティラノ、ショベルカー、はやぶさ、デコトラ、最後に鬼<br>やられてもコンティニューはなんかいでも</p>
       </div>
       <div class="howto" id="howto-air">
-        <p class="jump">進路は自動で進む。高さは変わらない</p>
-        <p class="bang">機銃は押しっぱなしで連射。飛んでくる弾は撃ち落とせる<br>5機連続で撃墜すると体力回復</p>
+        <p class="jump">進路は自動で進む。避けると大きくジャンプして、元の高さに戻る</p>
+        <p class="bang">機銃は1発ずつ。ノーミス10回で自動機銃掃射<br>被弾すると最初から。飛んでくる弾は撃ち落とせる<br>5機連続で撃墜すると体力回復</p>
         <p class="bang">ノーミス20機で F-15。さらに20機でミサイル<br>ミサイルは被弾しても残る。ゲージ満タンで使用、ストックは3発まで<br>F-15は体力が1/5で「超音速！ソニックブーム」</p>
-        <p class="pet">避ける（左シフト）で飛行機が一回転<br>回転のあともしばらく攻撃を受けない<br>敵はカラス、鳩、戦闘機、ヘリ<br>ボスは F-22、宇宙船、ガンダム、最後におもち<br>おもちの超必殺はスーパー猫パンチ。回転で避ける</p>
+        <p class="pet">避ける（左シフト）で飛行機がジャンプして戻る<br>跳んでいるあいだ、飛んでくる攻撃をかわす<br>敵はカラス、鳩、戦闘機、ヘリ<br>ボスは F-22、宇宙船、ガンダム、最後におもち<br>おもちの超必殺はスーパー猫パンチ。ジャンプして避ける</p>
       </div>
       <p class="best" id="title-best" hidden></p>
     </div>
@@ -713,6 +713,9 @@ const G = {
   airChain: 0,
   dropT: 1.4,
   gunNext: 0,
+  gunHits: 0,
+  gunPull: false,
+  bangDown: false,
   mslNext: 0,
   foes: [],
   bolts: [],
@@ -3502,6 +3505,7 @@ function updateButtons() {
     btnPet.classList.toggle('hot', G.roll > 0);
     btnJump.classList.remove('hot');
     btnBang.classList.toggle('hot', G.mode === 'play' && G.held.bang);
+    updateAirGunUi();
     fingerEl.hidden = true;
     if (btnMissile) btnMissile.disabled = !(G.missileOn && G.mslStock > 0 && G.mode === 'play' && G.overIn <= 0);
     return;
@@ -5975,8 +5979,11 @@ function draw() {
 
 const AIR_QUOTA = 8;
 const AIR_CHAIN = 5;
+const GUN_SLOW = 0.28;
+const GUN_RAPID = 0.08;
+const GUN_HITS = 10;
 const AIR_BOSS_ORDER = ['raptor', 'alien', 'gundam', 'omochi'];
-const AIR_BOSS_HP = { raptor: 150, alien: 180, gundam: 210, omochi: 250 };
+const AIR_BOSS_HP = { raptor: 28, alien: 34, gundam: 40, omochi: 48 };
 const AIR_NAMES = {
   raptor: 'F-22',
   alien: '宇宙船',
@@ -6004,7 +6011,13 @@ omochiImg.src = 'img/omochi.jpg';
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function airX() { return G.w * 0.22; }
-function airY() { return G.airN * G.h; }
+function airLaneY() { return G.airN * G.h; }
+function dodgeArc() {
+  if (G.roll <= 0 || G.sonic) return 0;
+  const t = clamp(1 - G.roll / DODGE_TIME, 0, 1);
+  return Math.sin(Math.PI * t);
+}
+function airY() { return airLaneY() - dodgeArc() * G.h * 0.38; }
 function airHomeX() {
   return Math.max(airX() + 150 * G.u, Math.min(G.w * 0.8, G.w - 28 * G.u));
 }
@@ -6088,6 +6101,9 @@ function resetAir() {
   G.cleared = false;
   G.overIn = 0;
   G.gunNext = 0;
+  G.gunHits = 0;
+  G.gunPull = false;
+  G.bangDown = false;
   G.mslNext = 0;
   G.sonic = null;
   G.sonicReady = true;
@@ -6145,12 +6161,7 @@ function bumpStreak() {
   renderAirHud();
 }
 
-const ROLL_TIME = 0.55;
-const DODGE_TIME = 1.35;
-
-function airRolling() {
-  return G.roll > 0;
-}
+const DODGE_TIME = 0.92;
 
 function tryRoll() {
   if (G.roll > 0 || G.sonic || G.overIn > 0 || G.hearts <= 0 || G.mode !== 'play') return;
@@ -6159,9 +6170,11 @@ function tryRoll() {
 }
 
 function airHurt() {
-  if (G.sonic || airRolling() || G.player.inv > 0 || G.overIn > 0 || G.hearts <= 0 || G.mode !== 'play') return;
+  if (G.sonic || G.player.inv > 0 || G.overIn > 0 || G.hearts <= 0 || G.mode !== 'play') return;
+  const hadSweep = gunAuto();
   G.streak = 0;
   G.airChain = 0;
+  G.gunHits = 0;
   G.hearts -= 1;
   G.player.inv = 1.25;
   G.player.hurtT = 0.4;
@@ -6169,6 +6182,7 @@ function airHurt() {
   G.shake = Math.max(G.shake, 12);
   renderHearts(true);
   renderAirHud();
+  if (hadSweep && G.hearts > 0) floatText('掃射が切れた', airX(), airY() - 36 * G.u);
   if (G.hearts <= 0) {
     G.overIn = 0.7;
     praise('被弾', 'bad');
@@ -6331,13 +6345,13 @@ function rollFoe() {
 }
 
 function makeFoe(kind) {
-  const hp = kind === 'heli' ? 16 : kind === 'plane' ? 10 : 4;
+  const hp = kind === 'heli' ? 5 : kind === 'plane' ? 3 : 1;
   return {
     kind,
     hp,
     max: hp,
     x: G.w + 50 + Math.random() * 90,
-    y: airY(),
+    y: airLaneY(),
     phase: Math.random() * 6,
     shot: 0.5 + Math.random() * 0.8,
     flinch: 0,
@@ -6411,6 +6425,50 @@ function spawnAirBoss() {
   G.praiseT = 1.5;
   sfx('boss');
   if (kind === 'raptor') sfx('jetIn');
+}
+
+function gunAuto() {
+  return G.gunHits >= GUN_HITS;
+}
+
+function noteGunHit(bolt) {
+  if (!bolt || bolt.kind !== 'gun' || bolt.gunCounted) return;
+  bolt.gunCounted = true;
+  if (gunAuto()) return;
+  G.gunHits += 1;
+  if (!gunAuto()) return;
+  G.gunNext = Math.min(G.gunNext, G.t + GUN_RAPID);
+  sfx('power');
+  floatText('掃射！', airX(), airY() - 36 * G.u);
+}
+
+function updateAirGunUi() {
+  if (G.chapter !== 'air') return;
+  const playing = G.mode === 'play' || G.mode === 'continue';
+  btnBang.classList.remove('gl');
+  if (!playing) {
+    bangEmoji.textContent = '●';
+    bangLabel.textContent = '機銃';
+    bangKey.textContent = '右シフト';
+    btnBang.classList.remove('mg');
+    return;
+  }
+  if (gunAuto()) {
+    bangEmoji.textContent = '⚡';
+    bangLabel.textContent = '掃射';
+    bangKey.textContent = '自動';
+    btnBang.classList.add('mg');
+    return;
+  }
+  btnBang.classList.remove('mg');
+  bangEmoji.textContent = '●';
+  if (G.gunHits > 0) {
+    bangLabel.textContent = 'れんさ' + G.gunHits;
+    bangKey.textContent = 'あと' + (GUN_HITS - G.gunHits);
+    return;
+  }
+  bangLabel.textContent = '機銃';
+  bangKey.textContent = '右シフト';
 }
 
 function hitBoss(missile) {
@@ -6487,7 +6545,7 @@ function nextPattern(b) {
   b.fired = false;
   b.nextShot = 0.08;
   if (b.pattern === 'super' || b.pattern === 'rifle' || b.pattern === 'saber' || b.pattern === 'last') sfx('focus');
-  b.lockY = clamp(airY(), G.h * 0.16, G.h * 0.84);
+  b.lockY = clamp(airLaneY(), G.h * 0.16, G.h * 0.84);
   b.lockY2 = clamp(b.lockY + (Math.random() < 0.5 ? -1 : 1) * G.h * 0.24, G.h * 0.16, G.h * 0.84);
   b.trackY = b.lockY;
   praise(AIR_CALL[b.pattern], 'jump');
@@ -6544,7 +6602,7 @@ function stopFoeShots(dt) {
 function runAct(b, dt) {
   const t = b.phaseT;
   const u = G.u;
-  const py = airY();
+  const py = airLaneY();
   if (b.pattern === 'salvo') {
     [-0.15, 0, 0.15].forEach((off) => {
       showBand(b, clamp(b.lockY + off * G.h, G.h * 0.14, G.h * 0.86), 14 * u, false, '');
@@ -6739,8 +6797,12 @@ function updateAir(dt) {
       G.input.pet = false;
       tryRoll();
     }
-    if (G.held.bang && G.t >= G.gunNext) {
-      G.gunNext = G.t + 0.072;
+    if (G.held.bang && !G.bangDown) G.gunPull = true;
+    G.bangDown = !!G.held.bang;
+    const sweep = gunAuto();
+    if (G.t >= G.gunNext && (sweep || G.gunPull)) {
+      G.gunPull = false;
+      G.gunNext = G.t + (sweep ? GUN_RAPID : GUN_SLOW);
       G.player.bangT = 0.04;
       G.bolts.push({
         side: 'player',
@@ -6748,7 +6810,7 @@ function updateAir(dt) {
         x: airX() + planeMetrics().w * 0.46,
         y: airY() + 2 * G.u,
         vx: 1100 * G.u,
-        vy: 0,
+        vy: sweep ? Math.sin(G.t * 18) * 24 * G.u : 0,
         r: 3.1 * G.u,
         age: 0,
         life: 0.9
@@ -6762,6 +6824,8 @@ function updateAir(dt) {
   } else {
     G.input.missile = false;
     G.input.pet = false;
+    G.gunPull = false;
+    G.bangDown = !!G.held.bang;
   }
 
   const u = G.u;
@@ -6785,7 +6849,7 @@ function updateAir(dt) {
     if (f.flinch > 0) f.flinch -= dt;
     const speed = f.kind === 'crow' ? 92 : f.kind === 'pigeon' ? 68 : f.kind === 'plane' ? 80 : 48;
     f.x -= speed * u * dt;
-    f.y = airY();
+    f.y = airLaneY();
     if (f.kind === 'plane' && !f.voiced && f.x < G.w * 0.92) {
       f.voiced = true;
       sfx('jet');
@@ -6794,8 +6858,7 @@ function updateAir(dt) {
       f.shot -= dt;
       if (f.shot <= 0) {
         f.shot = f.kind === 'heli' ? 1.15 : 1.5;
-        const aim = clamp((airY() - f.y) * 0.35, -90 * u, 90 * u);
-        foeShot(f.x - 24 * u, f.y, -300 * u, aim, 5 * u);
+        foeShot(f.x - 24 * u, f.y, -300 * u, 0, 5 * u);
       }
     }
     if (f.x < -80) f.dead = true;
@@ -6809,6 +6872,7 @@ function updateAir(dt) {
     if (bolt.side === 'player') {
       if (G.airBoss && G.airBoss.hp > 0 && Math.hypot(bolt.x - G.airBoss.x, bolt.y - G.airBoss.y) < bolt.r + bossR(G.airBoss)) {
         bolt.dead = true;
+        if (bolt.kind === 'gun') noteGunHit(bolt);
         hitBoss(bolt.kind === 'missile');
         return;
       }
@@ -6817,6 +6881,7 @@ function updateAir(dt) {
         if (f.dead) continue;
         if (Math.hypot(bolt.x - f.x, bolt.y - f.y) < bolt.r + foeR(f)) {
           bolt.dead = true;
+          if (bolt.kind === 'gun') noteGunHit(bolt);
           f.hp -= bolt.kind === 'missile' ? 99 : 1;
           f.flinch = 0.08;
           if (f.hp <= 0) killFoe(f, bolt.kind === 'missile');
@@ -8011,17 +8076,16 @@ function drawSonicAura(x, y) {
 
 function drawAirShipAt(x, y, face, tilt, ghost) {
   ctx.save();
-  const elapsed = G.roll > 0 ? DODGE_TIME - G.roll : 0;
-  const spinning = !ghost && G.roll > 0 && elapsed < ROLL_TIME;
-  const linger = !ghost && !G.sonic && G.roll > 0 && !spinning;
-  const blink = (linger || (!ghost && !G.sonic && G.player.inv > 0)) && Math.floor(G.t * 16) % 2 === 0;
-  ctx.globalAlpha = ghost ? 0.32 : (blink ? 0.4 : 1);
+  const arc = !ghost && !G.sonic ? dodgeArc() : 0;
+  const hop = G.roll > 0 ? clamp(1 - G.roll / DODGE_TIME, 0, 1) : 0;
+  const jumpTilt = arc > 0 ? (hop < 0.5 ? -0.62 : 0.42) * arc : 0;
+  const blink = !ghost && !G.sonic && G.player.inv > 0 && Math.floor(G.t * 16) % 2 === 0;
+  ctx.globalAlpha = ghost ? 0.28 : (blink ? 0.4 : 1);
   const ship = planeMetrics();
   const bob = G.sonic ? 0 : Math.sin(G.t * 2.2) * 2.4 * G.u;
   ctx.translate(x, y + bob);
   const idle = G.sonic ? 0 : Math.sin(G.t * 1.6) * 0.035;
-  const spin = spinning ? (elapsed / ROLL_TIME) * Math.PI * 2 : 0;
-  ctx.rotate((tilt != null ? tilt : idle) + spin);
+  ctx.rotate((tilt != null ? tilt : idle) + jumpTilt);
   ctx.scale(face || 1, 1);
   const planeOk = paintCenter(ship.name, ship.h);
   if (planeOk && !ghost) {
@@ -8054,6 +8118,7 @@ function drawAir() {
   const showShip = !pose || (pose.phase !== 'hang' && pose.phase !== 'hang2');
   const shipX = pose ? pose.x : airX();
   const shipY = pose ? pose.y : airY();
+  if (!pose && dodgeArc() > 0.04) drawAirShipAt(airX(), airLaneY(), 1, 0, true);
   const face = pose && pose.phase === 'return' ? -1 : 1;
   let tilt = null;
   if (pose && pose.phase === 'back') tilt = 0.1;
