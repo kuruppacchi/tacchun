@@ -8193,8 +8193,9 @@ function drawBoss(b) {
     if (!paintCenter('gundam', 150 * u)) drawGundam(u * 1.15, b.pattern === 'saber');
   } else drawOmochiBoss(u, b);
   ctx.restore();
+  const peeking = b.kind === 'alien' && alienPeekAmount(b) > 0.2;
   const bw = 150 * u;
-  const by = b.y - (b.kind === 'gundam' ? 92 : b.kind === 'omochi' ? 78 : 58) * u;
+  const by = b.y - (b.kind === 'gundam' ? 92 : b.kind === 'omochi' ? 78 : peeking ? 92 : 58) * u;
   ctx.fillStyle = 'rgba(8,10,14,0.78)';
   ctx.fillRect(b.x - bw / 2, by, bw, 7 * u);
   ctx.fillStyle = b.hp < b.max * 0.35 ? '#C4473A' : '#C9852E';
