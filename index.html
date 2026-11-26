@@ -31,13 +31,44 @@
   #hud {
     flex: 0 0 auto;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: calc(8px + env(safe-area-inset-top)) 14px 8px 64px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top)) 14px 8px 70px;
     background: #161B22;
     border-bottom: 1px solid #2A3342;
     z-index: 2;
+  }
+  #hud-stats {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  #hud-tools { display: none; gap: 8px; }
+  body.play #hud-tools { display: flex; }
+  body.pause #hud { z-index: 6; }
+  .hud-btn {
+    appearance: none;
+    flex: 1 1 0;
+    min-height: 44px;
+    border-radius: 8px;
+    border: 1px solid #314056;
+    background: #1C2430;
+    color: #E7EDF4;
+    font-size: clamp(15px, 3.6vw, 18px);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hud-btn:active, .hud-btn.pressed { transform: translateY(1px); filter: brightness(1.12); }
+  #btn-pause {
+    background: #243044;
+    border-color: #7EA0C4;
+    color: #F4F7FB;
   }
   body.title #hud, body.over #hud { display: none; }
   body.continue #coach, body.continue #controls { display: none; }
@@ -55,7 +86,8 @@
     #hp .name { display: none; }
     #hp { width: 86px; }
     #msl .name { display: none; }
-    #hud { gap: 6px; padding-left: 54px; padding-right: 8px; }
+    #hud { gap: 6px; padding-left: 70px; padding-right: 8px; }
+    #hud-stats { gap: 6px; }
     .score { font-size: 18px; }
   }
   .score.pop b { animation: pop 0.35s ease; }
@@ -169,7 +201,7 @@
   #coach.jump { color: #3E7A45; }
   #coach.good { color: #3E7A45; }
   #coach.bad { color: #A34B3A; }
-  body.title #coach, body.over #coach, body.continue #coach { display: none; }
+  body.title #coach, body.over #coach, body.continue #coach, body.pause #coach { display: none; }
   #controls {
     flex: 0 0 auto;
     display: grid;
@@ -270,6 +302,24 @@
   body.over #screen-continue,
   body.continue #screen-title,
   body.continue #screen-over { display: none; }
+  #screen-pause { display: none; }
+  body.pause #screen-pause {
+    display: flex;
+    z-index: 4;
+    pointer-events: auto;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: calc(128px + env(safe-area-inset-top));
+    background: rgba(10, 14, 20, 0.62);
+  }
+  .pause-box {
+    width: min(100%, 560px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  #screen-pause .card { text-align: center; }
   .card {
     pointer-events: none;
     background: rgba(16, 20, 28, 0.92);
@@ -446,16 +496,22 @@
 <body class="title">
 <div id="app">
   <header id="hud">
-    <div class="score" id="score-wrap">⭐ <b id="score">0</b></div>
-    <div id="dan">ステージ 1</div>
-    <div id="msl" hidden>
-      <span class="name">ミサイル</span>
-      <div class="track"><div class="fill" id="msl-fill"></div></div>
-      <span class="stock" id="msl-stock">0</span>
+    <div id="hud-tools">
+      <button type="button" class="hud-btn" id="btn-title" aria-label="タイトルにもどる">タイトル</button>
+      <button type="button" class="hud-btn" id="btn-pause" aria-pressed="false" aria-label="ポーズ">ポーズ</button>
     </div>
-    <div id="hp" aria-label="たいりょく">
-      <span class="name">たいりょく</span>
-      <div class="track"><div class="fill" id="hp-fill"></div></div>
+    <div id="hud-stats">
+      <div class="score" id="score-wrap">⭐ <b id="score">0</b></div>
+      <div id="dan">ステージ 1</div>
+      <div id="msl" hidden>
+        <span class="name">ミサイル</span>
+        <div class="track"><div class="fill" id="msl-fill"></div></div>
+        <span class="stock" id="msl-stock">0</span>
+      </div>
+      <div id="hp" aria-label="たいりょく">
+        <span class="name">たいりょく</span>
+        <div class="track"><div class="fill" id="hp-fill"></div></div>
+      </div>
     </div>
   </header>
   <div id="stage">
@@ -542,6 +598,15 @@
       <button type="button" class="go" id="btn-to-air" hidden>空中編へ</button>
       <button type="button" class="go" id="btn-retry">もういちど あそぶ</button>
       <div><button type="button" class="linkish" id="btn-home">はじめにもどる</button></div>
+    </div>
+  </section>
+
+  <section id="screen-pause" class="screen">
+    <div class="pause-box">
+      <div class="card over-card">
+        <h2>ポーズ</h2>
+        <p class="best">うえの「つづける」をおしてね</p>
+      </div>
     </div>
   </section>
 
@@ -650,6 +715,7 @@ const bangKey = btnBang.querySelector('.key');
 
 const G = {
   mode: 'title',
+  paused: false,
   t: 0,
   last: 0,
   w: 300,
@@ -1343,12 +1409,51 @@ function updateMusic(dt) {
   }
 }
 
+function syncBodyClass() {
+  const cls = [G.mode];
+  if (G.paused) cls.push('pause');
+  if (G.chapter === 'air') cls.push('air');
+  if (G.chapter === 'air' && G.missileOn && (G.mode === 'play' || G.mode === 'continue')) cls.push('msl');
+  document.body.className = cls.join(' ');
+  const pauseBtn = document.getElementById('btn-pause');
+  if (pauseBtn) {
+    pauseBtn.textContent = G.paused ? 'つづける' : 'ポーズ';
+    pauseBtn.setAttribute('aria-pressed', G.paused ? 'true' : 'false');
+    pauseBtn.setAttribute('aria-label', G.paused ? 'つづける' : 'ポーズ');
+  }
+}
+
 function setMode(mode) {
   G.mode = mode;
-  const cls = [mode];
-  if (G.chapter === 'air') cls.push('air');
-  if (G.chapter === 'air' && G.missileOn && (mode === 'play' || mode === 'continue')) cls.push('msl');
-  document.body.className = cls.join(' ');
+  if (mode !== 'play') G.paused = false;
+  syncBodyClass();
+}
+
+function releaseHold() {
+  G.held = { jump: false, bang: false, pet: false, missile: false };
+  G.input = { jump: false, bang: false, pet: false, missile: false };
+  btnJump.classList.remove('pressed');
+  btnBang.classList.remove('pressed');
+  btnPet.classList.remove('pressed');
+  if (btnMissile) btnMissile.classList.remove('pressed');
+}
+
+function togglePause() {
+  if (G.mode !== 'play') return;
+  G.paused = !G.paused;
+  if (G.paused) {
+    releaseHold();
+    fingerEl.hidden = true;
+    updateJet(false);
+    G.last = 0;
+  }
+  syncBodyClass();
+}
+
+function leaveToTitle() {
+  releaseHold();
+  updateJet(false);
+  goTitle();
 }
 
 function renderHearts(hit) {
@@ -6783,7 +6888,6 @@ function airLastBoss() {
 function updateAir(dt) {
   const play = G.mode === 'play';
   G.cam += (play ? 130 : 36) * G.u * dt;
-  if (play && !airLastBoss() && stormFlash(G.t) > 0 && stormFlash(G.t - dt) === 0) sfx('storm');
   if (G.roll > 0) G.roll = Math.max(0, G.roll - dt);
   if (!play) return;
   if (G.sonic) {
@@ -7966,43 +8070,118 @@ function drawBolt(bolt) {
   }
 }
 
+let airFadeCanvas = null;
+
+function drawAirPhoto(y, w, h, scroll) {
+  const img = GFX.bgAir;
+  ctx.drawImage(img, -scroll, y, w, h);
+  ctx.drawImage(img, w - scroll, y, w, h);
+}
+
+function drawFadedAirPhoto(frame) {
+  if (!airFadeCanvas) airFadeCanvas = document.createElement('canvas');
+  if (airFadeCanvas.width !== G.w || airFadeCanvas.height !== G.h) {
+    airFadeCanvas.width = G.w;
+    airFadeCanvas.height = G.h;
+  }
+  const c = airFadeCanvas.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-over';
+  c.clearRect(0, 0, G.w, G.h);
+  c.drawImage(GFX.bgAir, -frame.scroll, frame.y, frame.w, frame.h);
+  c.drawImage(GFX.bgAir, frame.w - frame.scroll, frame.y, frame.w, frame.h);
+  c.globalCompositeOperation = 'destination-out';
+  const fade = c.createLinearGradient(0, G.h * 0.34, 0, G.h * 0.62);
+  fade.addColorStop(0, 'rgba(0,0,0,1)');
+  fade.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = fade;
+  c.fillRect(0, 0, G.w, G.h);
+  c.globalCompositeOperation = 'screen';
+  c.fillStyle = 'rgba(198, 222, 238, 0.38)';
+  c.fillRect(0, G.h * 0.4, G.w, G.h);
+  ctx.drawImage(airFadeCanvas, 0, 0);
+}
+
+function airPhotoFrame() {
+  const img = GFX.bgAir;
+  const ir = img.naturalWidth / img.naturalHeight;
+  let h = G.h;
+  let w = h * ir;
+  if (w < G.w) {
+    w = G.w;
+    h = w / ir;
+  }
+  const y = G.h - h;
+  const scroll = ((G.cam * 0.2) % w + w) % w;
+  return { y, w, h, scroll };
+}
+
+function drawClearAirSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, G.h);
+  g.addColorStop(0, '#6E97C0');
+  g.addColorStop(0.48, '#A9C6DC');
+  g.addColorStop(1, '#D7E6D2');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, G.w, G.h);
+
+  const u = G.u;
+  const sunX = G.w * 0.16;
+  const sunY = G.h * 0.15;
+  const glow = ctx.createRadialGradient(sunX, sunY, 4 * u, sunX, sunY, 86 * u);
+  glow.addColorStop(0, 'rgba(255, 246, 214, 0.95)');
+  glow.addColorStop(0.42, 'rgba(255, 220, 150, 0.28)');
+  glow.addColorStop(1, 'rgba(255, 220, 150, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, 86 * u, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#FFF4D4';
+  ctx.beginPath();
+  ctx.arc(sunX, sunY, 16 * u, 0, Math.PI * 2);
+  ctx.fill();
+
+  for (let i = 0; i < 4; i += 1) {
+    const span = G.w + 260;
+    const x = ((i * 310 - G.cam * 0.12) % span + span) % span - 90;
+    const y = 26 * u + (i % 3) * 28 * u;
+    blob(x, y, 32 * u, 15 * u, 'rgba(255,255,255,0.94)', false);
+    blob(x + 24 * u, y + 4 * u, 22 * u, 13 * u, 'rgba(255,255,255,0.94)', false);
+    blob(x - 20 * u, y + 5 * u, 16 * u, 11 * u, 'rgba(255,255,255,0.9)', false);
+  }
+}
+
 function drawAirSky() {
   const last = airLastBoss();
   if (gfxOk('bgAir')) {
-    const img = GFX.bgAir;
-    const ir = img.naturalWidth / img.naturalHeight;
-    let h = G.h;
-    let w = h * ir;
-    if (w < G.w) {
-      w = G.w;
-      h = w / ir;
-    }
-    const y = G.h - h;
-    const scroll = ((G.cam * 0.2) % w + w) % w;
-    ctx.drawImage(img, -scroll, y, w, h);
-    ctx.drawImage(img, w - scroll, y, w, h);
+    const frame = airPhotoFrame();
     if (last) {
+      drawAirPhoto(frame.y, frame.w, frame.h, frame.scroll);
       ctx.fillStyle = 'rgba(6, 10, 18, 0.5)';
       ctx.fillRect(0, 0, G.w, G.h);
-    } else {
-      const flash = stormFlash(G.t);
-      if (flash) {
-        ctx.fillStyle = 'rgba(214, 226, 244, ' + (flash * 0.14) + ')';
-        ctx.fillRect(0, 0, G.w, G.h);
-      }
+      return;
     }
+    drawClearAirSky();
+    drawFadedAirPhoto(frame);
+    return;
+  }
+  if (!last) {
+    drawClearAirSky();
+    ctx.fillStyle = '#8EAE98';
+    ctx.beginPath();
+    ctx.moveTo(0, G.h * 0.78);
+    for (let x = 0; x <= G.w; x += 20) {
+      const y = G.h * 0.74 + Math.sin((x + G.cam * 0.2) * 0.01) * 10 * G.u;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(G.w, G.h);
+    ctx.lineTo(0, G.h);
+    ctx.fill();
     return;
   }
   const g = ctx.createLinearGradient(0, 0, 0, G.h);
-  if (last) {
-    g.addColorStop(0, '#070B12');
-    g.addColorStop(0.5, '#141B28');
-    g.addColorStop(1, '#1A2430');
-  } else {
-    g.addColorStop(0, '#121820');
-    g.addColorStop(0.5, '#243140');
-    g.addColorStop(1, '#3C4A58');
-  }
+  g.addColorStop(0, '#070B12');
+  g.addColorStop(0.5, '#141B28');
+  g.addColorStop(1, '#1A2430');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, G.w, G.h);
   for (let i = 0; i < 5; i += 1) {
@@ -8014,7 +8193,7 @@ function drawAirSky() {
     ctx.ellipse(x, y, 70 * G.u, 16 * G.u, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.fillStyle = last ? '#121820' : '#2A3644';
+  ctx.fillStyle = '#121820';
   ctx.beginPath();
   ctx.moveTo(0, G.h * 0.86);
   for (let x = 0; x <= G.w; x += 20) {
@@ -8024,13 +8203,6 @@ function drawAirSky() {
   ctx.lineTo(G.w, G.h);
   ctx.lineTo(0, G.h);
   ctx.fill();
-  if (!last) {
-    const flash = stormFlash(G.t);
-    if (flash) {
-      ctx.fillStyle = 'rgba(214, 226, 244, ' + (flash * 0.14) + ')';
-      ctx.fillRect(0, 0, G.w, G.h);
-    }
-  }
 }
 
 function drawSonicAura(x, y) {
@@ -8108,7 +8280,6 @@ function drawAir() {
   ctx.save();
   if (G.shake > 0.4) ctx.translate((Math.random() - 0.5) * G.shake, (Math.random() - 0.5) * G.shake);
   drawAirSky();
-  if (!airLastBoss()) drawRain();
   G.drops.forEach(drawDrop);
   if (G.airBoss) drawBands(G.airBoss);
   G.bolts.forEach(drawBolt);
@@ -8150,9 +8321,10 @@ function drawAir() {
 }
 
 function loop(now) {
-  if (document.hidden) {
+  if (document.hidden || G.paused) {
     G.last = 0;
     updateJet(false);
+    if (!document.hidden) draw();
     requestAnimationFrame(loop);
     return;
   }
@@ -8238,6 +8410,15 @@ document.getElementById('btn-home').addEventListener('pointerdown', (e) => {
   e.preventDefault();
   goTitle();
 });
+document.getElementById('btn-title').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (G.mode !== 'play') return;
+  leaveToTitle();
+});
+document.getElementById('btn-pause').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  togglePause();
+});
 muteBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   G.muted = !G.muted;
@@ -8284,6 +8465,16 @@ window.addEventListener('blur', () => {
 
 window.addEventListener('keydown', (e) => {
   if (e.repeat) return;
+  if (G.paused) {
+    e.preventDefault();
+    if (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'Enter') togglePause();
+    return;
+  }
+  if (G.mode === 'play' && (e.code === 'Escape' || e.code === 'KeyP')) {
+    e.preventDefault();
+    togglePause();
+    return;
+  }
   if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') e.preventDefault();
   if (G.chapter === 'air' && G.mode === 'play') {
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyW' || e.code === 'KeyS' || e.code === 'KeyF') e.preventDefault();
