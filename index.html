@@ -601,7 +601,7 @@
         <p class="jump">進路は自動で進む。避けると大きくジャンプして、元の高さに戻る</p>
         <p class="bang">機銃は1発ずつ。ノーミス10回で自動機銃掃射<br>被弾すると最初から。飛んでくる弾は撃ち落とせる<br>5機連続で撃墜すると体力回復</p>
         <p class="bang">ノーミス20機で F-15。さらに20機でミサイル<br>ミサイルは被弾しても残る。ゲージ満タンで使用、ストックは3発まで<br>F-15のソニックブームはゲージが溜まるとボタンが出る。押すと光が集まって、そのあと発動</p>
-        <p class="pet">避ける（左シフト）で飛行機がジャンプして戻る<br>跳んでいるあいだ、飛んでくる攻撃をかわす<br>敵はカラス、鳩、戦闘機、ヘリ<br>ボスは F-22、宇宙船、ガンダム、最後におもち<br>宇宙船は宇宙人が顔を出して撃つ。ジャンプして避ける<br>おもちの超必殺はスーパー猫パンチ。ジャンプして避ける</p>
+        <p class="pet">避ける（左シフト）で飛行機がジャンプして戻る<br>跳んでいるあいだ、飛んでくる攻撃をかわす<br>敵はカラス、鳩、戦闘機、ヘリ<br>ボスは F-22、宇宙船、ガンダム、最後におもち<br>宇宙船は宇宙人が顔を出して撃つ。ジャンプして避ける<br>おもちの超必殺はスーパー猫パンチ。さらに体力が減るとスーパーメガトン猫ナックル<br>どちらもジャンプして避ける</p>
       </div>
       <p class="best" id="title-best" hidden></p>
     </div>
@@ -1396,6 +1396,45 @@ function sfx(name) {
     donAt(now + 0.055, 0.7);
     toneAt(28, 0.62, 'sine', 0.07, now, 14);
   }
+  if (name === 'megatonCharge') megatonChargeAt(now);
+  if (name === 'megaton') megatonAt(now);
+}
+
+function megatonChargeAt(when) {
+  noiseAt(0.62, 0.055, when, 70, 'lowpass', 36, 0.35);
+  noiseAt(0.56, 0.04, when, 150, 'bandpass', 2800, 5.5);
+  toneAt(46, 0.58, 'sine', 0.08, when, 28);
+  toneAt(92, 0.52, 'sawtooth', 0.016, when, 680);
+  toneAt(170, 0.48, 'triangle', 0.026, when, 1200);
+  [0, 0.12, 0.24, 0.36].forEach((d, i) => {
+    toneAt(460 + i * 110, 0.08, 'sine', 0.038, when + d, 820 + i * 180);
+  });
+  toneAt(82, 0.1, 'sine', 0.05, when + 0.1, 40);
+  toneAt(68, 0.12, 'sine', 0.065, when + 0.26, 32);
+  toneAt(54, 0.14, 'sine', 0.08, when + 0.4, 24);
+  noiseAt(0.07, 0.06, when + 0.44, 2000, 'highpass');
+}
+
+function megatonAt(when) {
+  noiseAt(0.016, 0.22, when, 5800, 'highpass');
+  noiseAt(0.032, 0.15, when, 2200, 'bandpass', 340, 2.2);
+  donAt(when, 1.45);
+  donAt(when + 0.045, 1.15);
+  donAt(when + 0.1, 0.85);
+  toneAt(30, 0.9, 'sine', 0.13, when, 15);
+  toneAt(44, 0.72, 'sine', 0.09, when, 18);
+  toneAt(22, 1.05, 'sine', 0.07, when, 13);
+  blastAt(when, 1.75);
+  blastAt(when + 0.12, 1.15);
+  toneAt(1680, 0.06, 'triangle', 0.03, when, 360);
+  toneAt(880, 0.14, 'sine', 0.04, when + 0.05, 260);
+  toneAt(620, 0.18, 'triangle', 0.028, when + 0.08, 170);
+  const boom = when + 0.2;
+  noiseAt(0.024, 0.16, boom, 4600, 'highpass');
+  donAt(boom, 1);
+  blastAt(boom, 1.2);
+  noiseAt(0.5, 0.09, boom, 150, 'lowpass', 34);
+  toneAt(34, 0.65, 'sine', 0.09, boom, 16);
 }
 
 function grooveAt(i, when, step) {
@@ -6016,12 +6055,13 @@ function drawFx() {
     if (k < 0.04) continue;
     if (f.type === 'text') {
       ctx.globalAlpha = k;
-      ctx.font = '800 ' + Math.round(26 * G.u) + 'px "Hiragino Sans", "Yu Gothic", sans-serif';
+      const px = Math.round((f.big ? 58 : 26) * G.u);
+      ctx.font = '800 ' + px + 'px "Hiragino Sans", "Yu Gothic", sans-serif';
       ctx.textAlign = 'center';
-      ctx.lineWidth = 5;
-      ctx.strokeStyle = '#FFF8EC';
+      ctx.lineWidth = f.big ? 8 * G.u : 5;
+      ctx.strokeStyle = f.big ? '#2A1208' : '#FFF8EC';
       ctx.strokeText(f.text, f.x, f.y);
-      ctx.fillStyle = '#C56A12';
+      ctx.fillStyle = f.big ? '#FFE14A' : '#C56A12';
       ctx.fillText(f.text, f.x, f.y);
     } else if (f.type === 'dust') {
       blitFx('dust', f.x, f.y, 22 * k * G.u, k);
@@ -6178,8 +6218,11 @@ const AIR_CALL = {
   pounce: 'とびかかり',
   glare: 'にらみ雷',
   tail: 'しっぽ払い',
-  super: 'スーパー猫パンチ'
+  super: 'スーパー猫パンチ',
+  knuckle: 'スーパーメガトン\n猫ナックル'
 };
+const KNUCKLE_WIND = 0.5;
+const KNUCKLE_HIT = 0.14;
 const omochiImg = new Image();
 omochiImg.src = 'img/omochi.jpg';
 
@@ -6746,6 +6789,10 @@ function nextPattern(b) {
   else if (b.kind === 'raptor') list = ['salvo', 'dash', 'vulcan'];
   else if (b.kind === 'alien') list = ['plasma', 'peek', 'sweep', 'burst'];
   else if (b.kind === 'gundam') list = ['rifle', 'saber', 'vulcan'];
+  else if (b.hp < b.max * 0.36 && !b.knuckled) {
+    list = ['knuckle'];
+    b.knuckled = true;
+  } else if (b.hp < b.max * 0.36) list = ['knuckle', 'super', 'paw', 'knuckle', 'pounce'];
   else if (b.hp < b.max * 0.55) list = ['super', 'paw', 'pounce', 'super', 'tail'];
   else list = ['paw', 'glare', 'pounce', 'tail'];
   b.pattern = list[b.idx % list.length];
@@ -6753,14 +6800,16 @@ function nextPattern(b) {
   b.phase = 'act';
   b.phaseT = 0;
   b.fired = false;
+  b.after = false;
   b.nextShot = b.pattern === 'peek' ? 0.46 : 0.08;
   b.muzzle = 0;
-  if (b.pattern === 'super' || b.pattern === 'rifle' || b.pattern === 'saber' || b.pattern === 'last') sfx('focus');
+  if (b.pattern === 'knuckle') sfx('megatonCharge');
+  else if (b.pattern === 'super' || b.pattern === 'rifle' || b.pattern === 'saber' || b.pattern === 'last') sfx('focus');
   b.lockY = clamp(airLaneY(), G.h * 0.16, G.h * 0.84);
   b.lockY2 = clamp(b.lockY + (Math.random() < 0.5 ? -1 : 1) * G.h * 0.24, G.h * 0.16, G.h * 0.84);
   b.trackY = b.lockY;
   praise(AIR_CALL[b.pattern], 'jump');
-  G.praiseT = 0.85;
+  G.praiseT = b.pattern === 'knuckle' ? 1.7 : 0.85;
 }
 
 function foeShot(x, y, vx, vy, r, kind) {
@@ -6962,6 +7011,66 @@ function runAct(b, dt) {
       }
     }
     if (t > wind + punch + 0.28) endAct(b);
+  } else if (b.pattern === 'knuckle') {
+    const wind = KNUCKLE_WIND;
+    const hit = KNUCKLE_HIT;
+    const thick = G.h * 0.48;
+    b.y += (b.lockY - b.y) * Math.min(1, dt * 6);
+    if (t < wind) {
+      showBand(b, b.lockY, thick * (0.34 + 0.66 * (t / wind)), false, '');
+      if (t > wind * 0.62) {
+        G.flash = Math.max(G.flash, 0.24);
+        G.flashColor = 'rgba(255, 196, 60, 0.55)';
+        G.shake = Math.max(G.shake, 4);
+      }
+      if (t > b.nextShot) {
+        b.nextShot = t + 0.06;
+        burst('spark', b.x - 36 * u, b.y, 3);
+        burst('star', b.x - 10 * u, b.y - 8 * u, 2);
+      }
+    } else if (t < wind + hit) {
+      showBand(b, b.lockY, thick, true, 'knuckle');
+      bandHit(b.lockY, thick, true);
+      G.shake = Math.max(G.shake, 24);
+      if (!b.fired) {
+        b.fired = true;
+        sfx('megaton');
+        G.shake = 34;
+        G.flash = 0.95;
+        G.flashColor = 'rgba(255, 246, 214, 0.96)';
+        const ix = G.w * 0.4;
+        raysFx(ix, b.lockY, '#FFE14A');
+        raysFx(ix + 40 * u, b.lockY, '#FF5A32');
+        ringFx(ix, b.lockY, '#FFF8EC', 0.55, 3.4);
+        ringFx(ix, b.lockY, '#FFB020', 0.8, 5.2);
+        ringFx(ix, b.lockY, '#FF4A32', 1.05, 7.2);
+        burst('star', ix, b.lockY, 14);
+        burst('spark', ix, b.lockY, 10);
+        fireball(ix, b.lockY, 8);
+        pushFx({
+          type: 'text',
+          text: 'ドゴォン',
+          x: G.w * 0.46,
+          y: b.lockY - 28 * u,
+          vy: -22 * u,
+          age: 0,
+          life: 1.15,
+          big: true
+        });
+      }
+    } else {
+      b.x += (b.homeX - b.x) * Math.min(1, dt * 3);
+      if (!b.after && t > wind + hit + 0.08) {
+        b.after = true;
+        G.shake = Math.max(G.shake, 18);
+        G.flash = Math.max(G.flash, 0.5);
+        G.flashColor = 'rgba(255, 150, 48, 0.72)';
+        ringFx(G.w * 0.48, b.lockY, '#FFE7A0', 0.7, 8);
+        burst('star', b.x - 20 * u, b.y, 8);
+        fireball(G.w * 0.5, b.lockY, 5);
+      }
+    }
+    if (t > wind + hit + 0.62) endAct(b);
   } else endAct(b);
 }
 
@@ -7877,7 +7986,27 @@ function drawOmochiBoss(u, b) {
   let rot = 0;
   let sx = 1;
   let sy = 1;
-  if (pattern === 'super') {
+  if (pattern === 'knuckle') {
+    if (t < KNUCKLE_WIND) {
+      const c = t / KNUCKLE_WIND;
+      frame = 'omochiCoil';
+      tx = (-32 * c + Math.sin(t * 52) * 3.5) * u;
+      rot = 0.42 * c;
+      sx = 0.9 + c * 0.22;
+      sy = 1.08 + c * 0.16;
+    } else if (t < KNUCKLE_WIND + KNUCKLE_HIT) {
+      frame = 'omochiPunch';
+      tx = 120 * u;
+      rot = -0.62;
+      sx = 1.28;
+      sy = 0.78;
+    } else {
+      tx = 6 * u;
+      rot = 0.16;
+      sx = 1.04;
+      sy = 0.94;
+    }
+  } else if (pattern === 'super') {
     if (t < 0.42) {
       frame = 'omochiCoil';
       tx = -18 * u;
@@ -7927,6 +8056,132 @@ function drawOmochiBoss(u, b) {
   ctx.rotate(rot);
   ctx.scale(sx, sy);
   if (!paintCenter(frame, 96 * u)) drawOmochi(u);
+  ctx.restore();
+}
+
+function drawKnucklePaw(u) {
+  ctx.fillStyle = 'rgba(255, 214, 80, 0.45)';
+  ctx.beginPath();
+  ctx.ellipse(6 * u, 0, 78 * u, 50 * u, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#F7F7F5';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 58 * u, 36 * u, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#1A1C1E';
+  ctx.lineWidth = 3 * u;
+  ctx.stroke();
+  ctx.fillStyle = '#1A1C1E';
+  ctx.beginPath();
+  ctx.ellipse(22 * u, -8 * u, 16 * u, 10 * u, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#E7A0A8';
+  [[-16, 8], [0, 12], [16, 6], [6, -2]].forEach((p) => {
+    ctx.beginPath();
+    ctx.ellipse(p[0] * u, p[1] * u, 7 * u, 5 * u, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.strokeStyle = '#F4F1EA';
+  ctx.lineWidth = 3 * u;
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 4; i += 1) {
+    ctx.beginPath();
+    ctx.moveTo((-18 + i * 14) * u, -16 * u);
+    ctx.lineTo((-28 + i * 16) * u, -34 * u);
+    ctx.stroke();
+  }
+}
+
+function drawMegatonKnuckle(b, band) {
+  const p = clamp((b.phaseT - KNUCKLE_WIND) / KNUCKLE_HIT, 0, 1);
+  const e = 1 - (1 - p) * (1 - p) * (1 - p);
+  const u = G.u;
+  const x = b.homeX + 10 * u - e * (b.homeX - G.w * 0.16);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = 'rgba(255, 236, 180, 0.7)';
+  ctx.lineWidth = 3 * u;
+  for (let i = 0; i < 16; i += 1) {
+    const yy = band.y + ((i - 8) * 16) * u;
+    const len = (70 + (i * 47) % 120) * u;
+    ctx.globalAlpha = 0.35 + e * 0.45;
+    ctx.beginPath();
+    ctx.moveTo(x + 30 * u, yy);
+    ctx.lineTo(x + 30 * u + len, yy);
+    ctx.stroke();
+  }
+  ctx.restore();
+  for (let i = 4; i >= 1; i -= 1) {
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.translate(x + i * 54 * u, band.y);
+    ctx.scale(-1.15, 1.15);
+    if (!paintCenter('omochiPunch', G.h * 0.62)) drawKnucklePaw(u);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.translate(x, band.y);
+  ctx.scale(-1, 1);
+  const slam = 1.05 + Math.sin(p * Math.PI) * 0.28;
+  ctx.scale(slam, slam);
+  const glow = ctx.createRadialGradient(0, 0, 8 * u, 0, 0, 90 * u);
+  glow.addColorStop(0, 'rgba(255,255,255,0.85)');
+  glow.addColorStop(0.35, 'rgba(255, 210, 70, 0.55)');
+  glow.addColorStop(1, 'rgba(255, 70, 20, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 96 * u, 0, Math.PI * 2);
+  ctx.fill();
+  if (!paintCenter('omochiPunch', G.h * 0.7)) drawKnucklePaw(u);
+  ctx.restore();
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 248, 230, 0.92)';
+  ctx.lineWidth = 7 * u * (1 - p * 0.35);
+  ctx.beginPath();
+  ctx.ellipse(x - 20 * u, band.y, (24 + p * 210) * u, (12 + p * 64) * u, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 70, 36, 0.8)';
+  ctx.lineWidth = 4 * u;
+  ctx.beginPath();
+  ctx.ellipse(x - 20 * u, band.y, (12 + p * 150) * u, (8 + p * 42) * u, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 3 * u;
+  for (let i = 0; i < 10; i += 1) {
+    const a = -Math.PI * 0.85 + i * (Math.PI * 1.7 / 9);
+    const r0 = 18 * u;
+    const r1 = (50 + p * 130) * u;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * r0, band.y + Math.sin(a) * r0);
+    ctx.lineTo(x + Math.cos(a) * r1, band.y + Math.sin(a) * r1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawKnuckleCharge(b) {
+  if (!b || b.pattern !== 'knuckle' || b.phase !== 'act' || b.phaseT >= KNUCKLE_WIND) return;
+  const u = G.u;
+  const k = clamp(b.phaseT / KNUCKLE_WIND, 0, 1);
+  ctx.save();
+  ctx.fillStyle = 'rgba(10, 6, 16, ' + (0.06 + k * 0.28) + ')';
+  ctx.fillRect(0, 0, G.w, G.h);
+  const glow = ctx.createRadialGradient(b.x, b.y, 8 * u, b.x, b.y, (70 + k * 120) * u);
+  glow.addColorStop(0, 'rgba(255, 230, 120, ' + (0.25 + k * 0.5) + ')');
+  glow.addColorStop(0.55, 'rgba(255, 90, 30, ' + (0.12 + k * 0.2) + ')');
+  glow.addColorStop(1, 'rgba(255, 40, 20, 0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, (90 + k * 140) * u, 0, Math.PI * 2);
+  ctx.fill();
+  for (let i = 0; i < 10; i += 1) {
+    const a = G.t * (5 + k * 8) + i * Math.PI / 5;
+    const r = (88 - k * 58) * u;
+    ctx.fillStyle = i % 2 ? '#FFE14A' : '#FF4A32';
+    ctx.beginPath();
+    ctx.arc(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r * 0.62, (3.5 + k * 7) * u, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -8033,6 +8288,7 @@ function drawBands(b) {
     if (band.fx === 'bolt' && band.hot) drawLightning(band.y);
     if (band.fx === 'paw' && band.hot) drawPaw(band.y);
     if (band.fx === 'superpaw' && band.hot) drawSuperPaw(b, band);
+    if (band.fx === 'knuckle' && band.hot) drawMegatonKnuckle(b, band);
     if (band.fx === 'saber' && band.hot) {
       ctx.strokeStyle = 'rgba(255, 160, 210, 0.9)';
       ctx.lineWidth = 8 * G.u;
@@ -8721,6 +8977,7 @@ function drawAir() {
   if (G.shake > 0.4) ctx.translate((Math.random() - 0.5) * G.shake, (Math.random() - 0.5) * G.shake);
   drawAirSky();
   G.drops.forEach(drawDrop);
+  if (G.airBoss) drawKnuckleCharge(G.airBoss);
   if (G.airBoss) drawBands(G.airBoss);
   G.bolts.forEach(drawBolt);
   G.foes.forEach(drawFoe);
