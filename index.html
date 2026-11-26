@@ -4600,8 +4600,9 @@ function drawKidHead(u, mode) {
 }
 
 function planeMetrics() {
-  const eagle = G.plane === 'eagle';
-  const h = (eagle ? 20 : 22) * G.u;
+  const sonic = !!G.sonic;
+  const eagle = !sonic && G.plane === 'eagle';
+  const h = (eagle ? 20 : 22) * G.u * (sonic ? 2 : 1);
   const name = eagle ? 'f15' : 'zero';
   const img = GFX[name];
   const aspect = img && img.naturalWidth ? img.naturalWidth / img.naturalHeight : (eagle ? 4.4 : 3.8);
@@ -6431,7 +6432,8 @@ function sonicSweep(s) {
   if (b.x < x0 || b.x > x1) return;
   if (Math.abs(b.y - s.y) > reach + bossR(b) * 0.55) return;
   s.hitBoss = true;
-  b.hp -= Math.max(36, Math.round(b.max * 0.3));
+  const sonicCut = { raptor: 0.57, alien: 0.5, gundam: 0.5, omochi: 0.46 };
+  b.hp -= Math.round(b.max * (sonicCut[b.kind] || 0.5));
   b.flinch = 0.18;
   addGauge(0.35);
   burst('star', b.x, b.y, 16);
@@ -8487,65 +8489,66 @@ function tacchunPoint(x, y) {
 }
 
 function drawRisingCharge(s) {
-  const p = clamp(s.t / sonicDur('charge'), 0, 1);
-  const gather = Math.pow(p, 0.72);
+  const dur = sonicDur('charge');
+  const p = clamp(s.t / dur, 0, 1);
+  const gather = p * p * (3 - 2 * p);
   const u = G.u;
   const focus = tacchunPoint(s.x, s.y);
   const diag = Math.hypot(G.w, G.h);
-  const far = diag * 1.22 * (1 - gather) + 40 * u * gather;
-  const near = 8 * u;
-  const spin = s.t * 0.32;
+  const spin = s.t * 0.65;
   const rays = 16;
+  const far = diag * 1.05 * (1 - gather * 0.42);
+  const slot = (Math.PI * 2) / rays;
   ctx.save();
   ctx.translate(focus.x, focus.y);
   ctx.rotate(spin);
-  ctx.globalAlpha = 0.86;
   ctx.fillStyle = '#FFF4DC';
   ctx.beginPath();
   ctx.arc(0, 0, far, 0, Math.PI * 2);
   ctx.fill();
-  const slot = (Math.PI * 2) / rays;
-  for (let i = 0; i < rays; i += 1) {
-    const a0 = i * slot;
-    const a1 = a0 + slot * 0.5;
+  ctx.fillStyle = '#E10612';
+  for (let i = 0; i < rays; i += 2) {
     ctx.beginPath();
-    ctx.moveTo(Math.cos(a0) * near, Math.sin(a0) * near);
-    ctx.lineTo(Math.cos(a0) * far, Math.sin(a0) * far);
-    ctx.lineTo(Math.cos(a1) * far, Math.sin(a1) * far);
-    ctx.lineTo(Math.cos(a1) * near, Math.sin(a1) * near);
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, far, i * slot, (i + 1) * slot);
     ctx.closePath();
-    ctx.globalAlpha = 0.92;
-    ctx.fillStyle = '#E10612';
     ctx.fill();
   }
-  ctx.globalAlpha = 0.95;
-  ctx.strokeStyle = '#FFF8EA';
-  ctx.lineWidth = 2.4 * u;
-  ctx.beginPath();
-  ctx.arc(0, 0, far, 0, Math.PI * 2);
-  ctx.stroke();
   ctx.restore();
+  const lights = 24;
+  const bands = 4;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < rays; i += 1) {
-    const a = spin + ((i + 0.5) / rays) * Math.PI * 2;
-    for (let k = 0; k < 3; k += 1) {
-      const travel = (s.t * (0.42 + p * 0.85) + k * 0.33 + i * 0.02) % 1;
-      const r = diag * 1.08 * (1 - travel);
-      if (r < near) continue;
-      ctx.globalAlpha = 0.25 + travel * 0.75;
-      ctx.fillStyle = i % 2 === 0 ? '#FFE7A4' : '#FFFFFF';
+  for (let i = 0; i < lights; i += 1) {
+    const base = (i / lights) * Math.PI * 2;
+    for (let k = 0; k < bands; k += 1) {
+      const travel = (s.t * 0.38 + i * 0.041 + k * 0.25) % 1;
+      const fade = Math.sin(travel * Math.PI);
+      const head = diag * 1.18 * (1 - travel) + 14 * u;
+      const tail = head + (22 + (1 - travel) * 48) * u;
+      const a = base + s.t * 0.22;
+      const x = focus.x + Math.cos(a) * head;
+      const y = focus.y + Math.sin(a) * head;
+      ctx.globalAlpha = 0.22 + fade * 0.7;
+      ctx.strokeStyle = (i + k) % 3 === 0 ? '#FFF4DC' : '#FFFFFF';
+      ctx.lineWidth = (1.4 + fade * 1.8) * u;
       ctx.beginPath();
-      ctx.arc(focus.x + Math.cos(a) * r, focus.y + Math.sin(a) * r, (2 + travel * 2.6) * u, 0, Math.PI * 2);
+      ctx.moveTo(focus.x + Math.cos(a) * tail, focus.y + Math.sin(a) * tail);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.globalAlpha = 0.45 + fade * 0.55;
+      ctx.fillStyle = i % 2 === 0 ? '#FFF8EA' : '#FFE7A4';
+      ctx.beginPath();
+      ctx.arc(x, y, (2.1 + fade * 2.4) * u, 0, Math.PI * 2);
       ctx.fill();
     }
   }
   ctx.restore();
-  const core = (18 + gather * 26) * u;
+  const core = (18 + gather * 34) * u;
   const glow = ctx.createRadialGradient(focus.x, focus.y, 2 * u, focus.x, focus.y, core);
   glow.addColorStop(0, 'rgba(255, 252, 240, 0.95)');
-  glow.addColorStop(0.42, 'rgba(255, 196, 70, 0.55)');
-  glow.addColorStop(1, 'rgba(255, 40, 24, 0)');
+  glow.addColorStop(0.45, 'rgba(255, 214, 120, ' + (0.35 + gather * 0.4) + ')');
+  glow.addColorStop(1, 'rgba(255, 48, 24, 0)');
   ctx.fillStyle = glow;
   ctx.beginPath();
   ctx.arc(focus.x, focus.y, core, 0, Math.PI * 2);
@@ -8701,7 +8704,7 @@ function drawAirShipAt(x, y, face, tilt, ghost) {
     drawKidHead(faceU, hurt ? 'hurt' : wink ? 'blink' : 'smile');
     ctx.restore();
   } else if (!planeOk && ship.eagle) drawEagle(G.u);
-  else if (!planeOk) drawZero(G.u);
+  else if (!planeOk) drawZero(G.u * (G.sonic ? 2 : 1));
   ctx.restore();
 }
 
@@ -8740,7 +8743,7 @@ function drawAir() {
     ctx.lineTo(Math.max(0, shipX - 30 * u), shipY);
     ctx.stroke();
     ctx.restore();
-    for (let i = 3; i >= 1; i -= 1) drawAirShipAt(shipX - i * 52 * u, shipY, 1, -0.04, true);
+    for (let i = 3; i >= 1; i -= 1) drawAirShipAt(shipX - i * 104 * u, shipY, 1, -0.04, true);
     drawSonicAura(shipX, shipY);
   }
   if (showShip) drawAirShipAt(shipX, shipY, face, tilt, false);
