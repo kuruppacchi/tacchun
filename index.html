@@ -85,7 +85,7 @@
   @media (max-width: 560px) {
     #hp .name { display: none; }
     #hp { width: 86px; }
-    #msl .name { display: none; }
+    #msl .name, #sonic .name { display: none; }
     #hud { gap: 6px; padding-left: 70px; padding-right: 8px; }
     #hud-stats { gap: 6px; }
     .score { font-size: 18px; }
@@ -155,6 +155,33 @@
     font-size: clamp(14px, 3vw, 18px);
     min-width: 1.2em;
   }
+  #sonic {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  #sonic:not([hidden]) { display: flex; }
+  #sonic .name {
+    font-weight: 800;
+    color: #F0B0A4;
+    font-size: clamp(11px, 2.4vw, 14px);
+    white-space: nowrap;
+  }
+  #sonic .track {
+    width: clamp(64px, 16vw, 120px);
+    height: 10px;
+    background: #2A1816;
+    border: 1px solid #6A3830;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #sonic .fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, #8E241C, #FF5A3C);
+  }
+  #sonic.full .track { box-shadow: 0 0 0 1px #FF5A3C; }
   #hp.hit .track { animation: hpShake 0.35s ease; }
   @keyframes hpShake {
     0%, 100% { transform: translateX(0); }
@@ -249,6 +276,8 @@
   .act.pet { background: #261C22; color: #F0D0D4; }
   .act.mslbtn { background: #2A2416; color: #F0D7A4; }
   .act.mslbtn:disabled { opacity: 0.38; }
+  .act.sonicbtn { background: #3A1614; color: #F8D0C4; }
+  .act.sonicbtn:disabled { opacity: 0.38; }
   .act.pressed { transform: translateY(2px); filter: brightness(1.15); }
   .act.hot { box-shadow: inset 0 0 0 2px #E2B15A; }
   body.air .act.pet { background: #1A242C; color: #D5E2EE; }
@@ -258,6 +287,10 @@
   #btn-missile { display: none; }
   body.air.msl #btn-missile { display: flex; }
   body.air.msl #controls { grid-template-columns: 1.05fr 0.9fr 1fr; }
+  #btn-sonic { display: none; }
+  body.air.sonic-go #btn-sonic { display: flex; }
+  body.air.sonic-go #controls { grid-template-columns: 1fr 0.92fr 1fr; }
+  body.air.msl.sonic-go #controls { grid-template-columns: 1fr 0.82fr 0.82fr 1fr; }
   #btn-mute {
     position: absolute;
     z-index: 8;
@@ -508,6 +541,10 @@
         <div class="track"><div class="fill" id="msl-fill"></div></div>
         <span class="stock" id="msl-stock">0</span>
       </div>
+      <div id="sonic" hidden>
+        <span class="name">ソニック</span>
+        <div class="track"><div class="fill" id="sonic-fill"></div></div>
+      </div>
       <div id="hp" aria-label="たいりょく">
         <span class="name">たいりょく</span>
         <div class="track"><div class="fill" id="hp-fill"></div></div>
@@ -534,6 +571,11 @@
       <span class="label">ミサイル</span>
       <span class="key">Z</span>
     </button>
+    <button type="button" class="act sonicbtn" id="btn-sonic" tabindex="-1">
+      <span class="emoji" aria-hidden="true">💥</span>
+      <span class="label">ソニック</span>
+      <span class="key">X</span>
+    </button>
     <button type="button" class="act pet" id="btn-pet" tabindex="-1">
       <span class="emoji" aria-hidden="true">♥</span>
       <span class="label">ヨシヨシ</span>
@@ -558,8 +600,8 @@
       <div class="howto" id="howto-air">
         <p class="jump">進路は自動で進む。避けると大きくジャンプして、元の高さに戻る</p>
         <p class="bang">機銃は1発ずつ。ノーミス10回で自動機銃掃射<br>被弾すると最初から。飛んでくる弾は撃ち落とせる<br>5機連続で撃墜すると体力回復</p>
-        <p class="bang">ノーミス20機で F-15。さらに20機でミサイル<br>ミサイルは被弾しても残る。ゲージ満タンで使用、ストックは3発まで<br>F-15は体力が1/5で「超音速！ソニックブーム」</p>
-        <p class="pet">避ける（左シフト）で飛行機がジャンプして戻る<br>跳んでいるあいだ、飛んでくる攻撃をかわす<br>敵はカラス、鳩、戦闘機、ヘリ<br>ボスは F-22、宇宙船、ガンダム、最後におもち<br>おもちの超必殺はスーパー猫パンチ。ジャンプして避ける</p>
+        <p class="bang">ノーミス20機で F-15。さらに20機でミサイル<br>ミサイルは被弾しても残る。ゲージ満タンで使用、ストックは3発まで<br>F-15のソニックブームはゲージが溜まるとボタンが出る。押すと発動</p>
+        <p class="pet">避ける（左シフト）で飛行機がジャンプして戻る<br>跳んでいるあいだ、飛んでくる攻撃をかわす<br>敵はカラス、鳩、戦闘機、ヘリ<br>ボスは F-22、宇宙船、ガンダム、最後におもち<br>宇宙船は宇宙人が顔を出して撃つ。ジャンプして避ける<br>おもちの超必殺はスーパー猫パンチ。ジャンプして避ける</p>
       </div>
       <p class="best" id="title-best" hidden></p>
     </div>
@@ -706,8 +748,11 @@ const btnJump = document.getElementById('btn-jump');
 const btnBang = document.getElementById('btn-bang');
 const btnPet = document.getElementById('btn-pet');
 const btnMissile = document.getElementById('btn-missile');
+const btnSonic = document.getElementById('btn-sonic');
 const mslEl = document.getElementById('msl');
 const mslFill = document.getElementById('msl-fill');
+const sonicEl = document.getElementById('sonic');
+const sonicFill = document.getElementById('sonic-fill');
 const mslStockEl = document.getElementById('msl-stock');
 const bangEmoji = btnBang.querySelector('.emoji');
 const bangLabel = btnBang.querySelector('.label');
@@ -744,7 +789,7 @@ const G = {
   shownFallen: false,
   cleared: false,
   openerFriendly: false,
-  input: { jump: false, bang: false, pet: false, missile: false },
+  input: { jump: false, bang: false, pet: false, missile: false, sonic: false },
   player: { y: 240, vy: 0, petT: 0, bangT: 0, hurtT: 0, cheerT: 0, inv: 0, squash: 0 },
   praiseT: 0,
   coachText: '',
@@ -789,7 +834,7 @@ const G = {
   airBoss: null,
   bestAir: 0,
   sonic: null,
-  sonicReady: true
+  sonicGauge: 0
 };
 
 let actx = null;
@@ -1032,6 +1077,23 @@ function beamManga(when) {
   toneAt(64, 0.15, 'sine', 0.07, when, 30);
 }
 
+function sonicBoomAt(when) {
+  noiseAt(0.36, 0.11, when, 620, 'bandpass', 2800, 8);
+  noiseAt(0.42, 0.07, when, 200, 'lowpass', 80, 0.5);
+  toneAt(260, 0.34, 'sawtooth', 0.02, when, 1760);
+  toneAt(130, 0.36, 'triangle', 0.028, when, 70);
+  const boom = when + 0.22;
+  noiseAt(0.028, 0.2, boom, 5200, 'highpass');
+  noiseAt(0.04, 0.14, boom + 0.05, 3800, 'highpass');
+  noiseAt(0.09, 0.1, boom, 1500, 'bandpass', 360, 1.5);
+  toneAt(58, 0.72, 'sine', 0.16, boom, 40);
+  toneAt(36, 0.86, 'sine', 0.1, boom, 40);
+  noiseAt(0.72, 0.13, boom, 240, 'lowpass', 55, 0.4);
+  noiseAt(0.42, 0.07, boom, 620, 'bandpass', 150, 0.75);
+  noiseAt(0.55, 0.05, boom + 0.08, 1700, 'bandpass', 220, 5);
+  toneAt(1100, 0.48, 'triangle', 0.015, boom + 0.05, 140);
+}
+
 function jetPassAt(when, force) {
   if (!force && when - lastJetPass < 0.48) return;
   lastJetPass = when;
@@ -1232,14 +1294,13 @@ function sfx(name) {
   if (name === 'missile') rocketAt(now, true, 1);
   if (name === 'jet') jetPassAt(now, false);
   if (name === 'jetIn') jetPassAt(now, true);
-  if (name === 'sonic') {
-    jetPassAt(now, true);
-    noiseAt(0.5, 0.11, now, 240, 'lowpass', 90, 0.4);
-    noiseAt(0.22, 0.1, now, 1800, 'bandpass', 900, 1.6);
-    toneAt(70, 0.55, 'sine', 0.1, now, 34);
-    toneAt(180, 0.28, 'sawtooth', 0.03, now, 520);
-    blastAt(now + 0.04, 0.85);
+  if (name === 'spool') {
+    noiseAt(1.02, 0.055, now, 260, 'bandpass', 1400, 5);
+    noiseAt(1.02, 0.04, now, 120, 'lowpass', 70, 0.45);
+    toneAt(110, 0.95, 'sawtooth', 0.016, now, 640);
+    toneAt(70, 0.95, 'sine', 0.035, now, 46);
   }
+  if (name === 'sonic') sonicBoomAt(now);
   if (name === 'beam') beamManga(now);
   if (name === 'boom') blastAt(now, 1);
   if (name === 'detonate') {
@@ -1414,6 +1475,7 @@ function syncBodyClass() {
   if (G.paused) cls.push('pause');
   if (G.chapter === 'air') cls.push('air');
   if (G.chapter === 'air' && G.missileOn && (G.mode === 'play' || G.mode === 'continue')) cls.push('msl');
+  if (G.chapter === 'air' && G.plane === 'eagle' && G.sonicGauge >= 1 && !G.sonic && G.hearts > 0 && (G.mode === 'play' || G.mode === 'continue')) cls.push('sonic-go');
   document.body.className = cls.join(' ');
   const pauseBtn = document.getElementById('btn-pause');
   if (pauseBtn) {
@@ -1430,12 +1492,13 @@ function setMode(mode) {
 }
 
 function releaseHold() {
-  G.held = { jump: false, bang: false, pet: false, missile: false };
-  G.input = { jump: false, bang: false, pet: false, missile: false };
+  G.held = { jump: false, bang: false, pet: false, missile: false, sonic: false };
+  G.input = { jump: false, bang: false, pet: false, missile: false, sonic: false };
   btnJump.classList.remove('pressed');
   btnBang.classList.remove('pressed');
   btnPet.classList.remove('pressed');
   if (btnMissile) btnMissile.classList.remove('pressed');
+  if (btnSonic) btnSonic.classList.remove('pressed');
 }
 
 function togglePause() {
@@ -1738,7 +1801,6 @@ function continueGame() {
     G.overIn = 0;
     G.sonic = null;
     G.roll = 0;
-    G.sonicReady = true;
     G.player.inv = 2;
     G.player.hurtT = 0;
     G.bolts = G.bolts.filter((b) => b.side !== 'foe');
@@ -3613,6 +3675,11 @@ function updateButtons() {
     updateAirGunUi();
     fingerEl.hidden = true;
     if (btnMissile) btnMissile.disabled = !(G.missileOn && G.mslStock > 0 && G.mode === 'play' && G.overIn <= 0);
+    if (btnSonic) {
+      const ready = G.plane === 'eagle' && G.sonicGauge >= 1 && !G.sonic && G.mode === 'play' && G.overIn <= 0 && G.hearts > 0;
+      btnSonic.disabled = !ready;
+      btnSonic.classList.toggle('hot', ready);
+    }
     return;
   }
   const a = G.animals.find((an) => !an.gone && !an.resolved && an.appeared);
@@ -6102,6 +6169,7 @@ const AIR_CALL = {
   plasma: 'プラズマ弾',
   sweep: 'アブダクトビーム',
   burst: '拡散光線',
+  peek: '宇宙人ショット',
   rifle: 'ビームライフル',
   saber: 'ビームサーベル',
   last: 'ラストシューティング',
@@ -6136,6 +6204,12 @@ function renderAirHud() {
     mslStockEl.textContent = '×' + G.mslStock;
     const key = btnMissile.querySelector('.key');
     if (key) key.textContent = 'Z  ×' + G.mslStock;
+  }
+  const showSonic = G.chapter === 'air' && G.plane === 'eagle' && (G.mode === 'play' || G.mode === 'continue');
+  if (sonicEl) {
+    sonicEl.hidden = !showSonic;
+    sonicEl.classList.toggle('full', showSonic && G.sonicGauge >= 1);
+    if (showSonic && sonicFill) sonicFill.style.width = (clamp(G.sonicGauge, 0, 1) * 100) + '%';
   }
   if (G.chapter !== 'air') return;
   if (G.mode !== 'play' && G.mode !== 'continue') {
@@ -6211,7 +6285,7 @@ function resetAir() {
   G.bangDown = false;
   G.mslNext = 0;
   G.sonic = null;
-  G.sonicReady = true;
+  G.sonicGauge = 0;
   G.player.inv = 0;
   G.player.hurtT = 0;
   G.player.bangT = 0;
@@ -6219,7 +6293,7 @@ function resetAir() {
   G.shake = 0;
   G.flash = 0;
   G.held = { jump: false, bang: false, pet: false };
-  G.input = { jump: false, bang: false, pet: false, missile: false };
+  G.input = { jump: false, bang: false, pet: false, missile: false, sonic: false };
   popScore();
   renderHearts();
   coach('', '');
@@ -6237,6 +6311,19 @@ function addGauge(n) {
   }
   if (G.mslStock >= 3) G.mslGauge = Math.min(G.mslGauge, 0.999);
   renderAirHud();
+}
+
+function addSonic(n) {
+  if (G.plane !== 'eagle' || G.sonic || n <= 0 || G.sonicGauge >= 1) return;
+  G.sonicGauge = Math.min(1, G.sonicGauge + n);
+  if (G.sonicGauge >= 0.999) G.sonicGauge = 1;
+  if (G.sonicGauge >= 1) {
+    sfx('power');
+    praise('ソニック！\nボタン', 'bang');
+    G.praiseT = 1.3;
+  }
+  renderAirHud();
+  syncBodyClass();
 }
 
 function bumpStreak() {
@@ -6288,14 +6375,8 @@ function airHurt() {
   renderHearts(true);
   renderAirHud();
   if (hadSweep && G.hearts > 0) floatText('掃射が切れた', airX(), airY() - 36 * G.u);
-  if (G.hearts <= 0) {
-    G.overIn = 0.7;
-    praise('被弾', 'bad');
-  } else if (G.plane === 'eagle' && G.hearts * 5 <= MAX_HEARTS && G.sonicReady) {
-    startSonicBoom();
-  } else {
-    praise('被弾', 'bad');
-  }
+  if (G.hearts <= 0) G.overIn = 0.7;
+  praise('被弾', 'bad');
 }
 
 function startSonicBoom() {
@@ -6303,7 +6384,6 @@ function startSonicBoom() {
   let rushY = fromY;
   const boss = G.airBoss;
   if (boss && boss.hp > 0) rushY = clamp(boss.y, G.h * 0.16, G.h * 0.84);
-  G.sonicReady = false;
   G.sonic = {
     phase: 'back',
     t: 0,
@@ -6320,22 +6400,22 @@ function startSonicBoom() {
   G.player.inv = 4;
   praise('超音速！\nソニックブーム', 'bang');
   G.praiseT = 2;
-  sfx('focus');
+  sfx('spool');
   G.flash = 0.28;
   G.flashColor = 'rgba(255, 64, 48, 0.42)';
 }
 
 function sonicDur(phase) {
-  if (phase === 'back') return 0.5;
-  if (phase === 'hang') return 0.13;
-  if (phase === 'rush') return 0.32;
-  if (phase === 'hang2') return 0.15;
+  if (phase === 'back') return 1.05;
+  if (phase === 'hang') return 0.22;
+  if (phase === 'rush') return 0.48;
+  if (phase === 'hang2') return 0.32;
   return 0.64;
 }
 
 function sonicSweep(s) {
   const u = G.u;
-  const reach = G.h * 0.2;
+  const reach = s.phase === 'rush' ? G.h * 0.92 : G.h * 0.2;
   const x0 = Math.min(s.prevX, s.x) - 24 * u;
   const x1 = Math.max(s.prevX, s.x) + 48 * u;
   G.foes.forEach((f) => {
@@ -6375,7 +6455,7 @@ function updateSonic(dt) {
   const offR = G.w + 140 * u;
   s.prevX = s.x;
   if (s.phase === 'back') {
-    const e = p * p;
+    const e = p * p * (3 - 2 * p);
     s.x = home + (offL - home) * e;
     s.y = s.fromY;
   } else if (s.phase === 'hang') {
@@ -6385,16 +6465,16 @@ function updateSonic(dt) {
     if (!s.roared) {
       s.roared = true;
       sfx('sonic');
-      G.shake = Math.max(G.shake, 16);
-      G.flash = 0.4;
-      G.flashColor = 'rgba(255, 40, 32, 0.55)';
+      G.shake = Math.max(G.shake, 10);
+      G.flash = 0.14;
+      G.flashColor = 'rgba(255, 244, 230, 0.7)';
       G.bolts = G.bolts.filter((b) => b.side !== 'foe');
       ringFx(G.w * 0.35, s.rushY, '#FF5A48', 0.4, 2.2);
     }
     s.x = offL + (offR - offL) * p;
     s.y = s.rushY;
     sonicSweep(s);
-    G.shake = Math.max(G.shake, 7);
+    G.shake = Math.max(G.shake, 2.5);
   } else if (s.phase === 'hang2') {
     s.x = offR;
     s.y = s.rushY;
@@ -6413,6 +6493,17 @@ function updateSonic(dt) {
   }
   G.sonic = null;
   G.player.inv = 0.7;
+  renderAirHud();
+  syncBodyClass();
+}
+
+function trySonic() {
+  if (G.chapter !== 'air' || G.plane !== 'eagle') return;
+  if (G.sonicGauge < 1 || G.sonic || G.overIn > 0 || G.hearts <= 0 || G.mode !== 'play') return;
+  G.sonicGauge = 0;
+  renderAirHud();
+  syncBodyClass();
+  startSonicBoom();
 }
 
 function tryMissile() {
@@ -6488,6 +6579,7 @@ function killFoe(f, heavy) {
   burst('spark', f.x, f.y, 8);
   sfx(heavy ? 'detonate' : 'boom');
   addGauge(0.1);
+  addSonic(0.1);
   bumpStreak();
   noteAirChain();
   popScore();
@@ -6499,7 +6591,6 @@ function noteAirChain() {
   if (G.airChain % AIR_CHAIN !== 0) return;
   if (G.hearts <= 0 || G.hearts >= MAX_HEARTS) return;
   G.hearts += 1;
-  if (G.hearts * 5 > MAX_HEARTS) G.sonicReady = true;
   sfx('heal');
   floatText('回復', airX(), airY() - 36 * G.u);
   renderHearts();
@@ -6582,6 +6673,7 @@ function hitBoss(missile) {
   b.hp -= missile ? 22 : 1;
   b.flinch = 0.1;
   addGauge(1 / 15);
+  addSonic(missile ? 0.14 : 0.035);
   if (missile) {
     sfx('detonate');
     burst('star', b.x, b.y, 12);
@@ -6639,7 +6731,7 @@ function nextPattern(b) {
   let list;
   if (b.kind === 'gundam' && b.hp < b.max * 0.4) list = ['rifle', 'saber', 'last', 'vulcan'];
   else if (b.kind === 'raptor') list = ['salvo', 'dash', 'vulcan'];
-  else if (b.kind === 'alien') list = ['plasma', 'sweep', 'burst'];
+  else if (b.kind === 'alien') list = ['plasma', 'peek', 'sweep', 'burst'];
   else if (b.kind === 'gundam') list = ['rifle', 'saber', 'vulcan'];
   else if (b.hp < b.max * 0.55) list = ['super', 'paw', 'pounce', 'super', 'tail'];
   else list = ['paw', 'glare', 'pounce', 'tail'];
@@ -6648,7 +6740,8 @@ function nextPattern(b) {
   b.phase = 'act';
   b.phaseT = 0;
   b.fired = false;
-  b.nextShot = 0.08;
+  b.nextShot = b.pattern === 'peek' ? 0.46 : 0.08;
+  b.muzzle = 0;
   if (b.pattern === 'super' || b.pattern === 'rifle' || b.pattern === 'saber' || b.pattern === 'last') sfx('focus');
   b.lockY = clamp(airLaneY(), G.h * 0.16, G.h * 0.84);
   b.lockY2 = clamp(b.lockY + (Math.random() < 0.5 ? -1 : 1) * G.h * 0.24, G.h * 0.16, G.h * 0.84);
@@ -6657,8 +6750,8 @@ function nextPattern(b) {
   G.praiseT = 0.85;
 }
 
-function foeShot(x, y, vx, vy, r) {
-  G.bolts.push({ side: 'foe', kind: 'orb', x, y, vx, vy, r, age: 0, life: 4, wobble: null, blockable: true });
+function foeShot(x, y, vx, vy, r, kind) {
+  G.bolts.push({ side: 'foe', kind: kind || 'orb', x, y, vx, vy, r, age: 0, life: 4, wobble: null, blockable: true });
 }
 
 function stopFoeShots(dt) {
@@ -6771,6 +6864,22 @@ function runAct(b, dt) {
       }
     }
     if (t > 1.25) endAct(b);
+  } else if (b.pattern === 'peek') {
+    if (b.muzzle > 0) b.muzzle -= dt;
+    b.y += (b.lockY + 8 * u - b.y) * Math.min(1, dt * 3.2);
+    if (t < 0.46) showBand(b, b.lockY, 18 * u, false, '');
+    if (t > 0.46 && t < 1.28 && t > b.nextShot) {
+      b.nextShot += 0.18;
+      const gx = b.x - 36 * u;
+      const gy = b.y - 36 * u;
+      const speed = 460 * u;
+      const dist = Math.max(90 * u, gx - airX());
+      const vy = (b.lockY - gy) * speed / dist;
+      foeShot(gx, gy, -speed, vy, 4.6 * u, 'ray');
+      b.muzzle = 0.07;
+      sfx('gun');
+    }
+    if (t > 1.72) endAct(b);
   } else if (b.pattern === 'rifle') {
     const hot = t > 0.5 && t < 0.82;
     showBand(b, b.lockY, hot ? 26 * u : 12 * u, hot, 'beam');
@@ -6921,11 +7030,16 @@ function updateAir(dt) {
       });
       sfx('gun');
     }
+    if (G.input.sonic) {
+      G.input.sonic = false;
+      trySonic();
+    }
     if (G.input.missile) {
       G.input.missile = false;
       tryMissile();
     }
   } else {
+    G.input.sonic = false;
     G.input.missile = false;
     G.input.pet = false;
     G.gunPull = false;
@@ -7913,6 +8027,79 @@ function drawBands(b) {
   });
 }
 
+function alienPeekAmount(b) {
+  if (!b || b.pattern !== 'peek' || b.phase !== 'act') return 0;
+  const t = b.phaseT;
+  if (t < 0.34) return clamp(t / 0.34, 0, 1);
+  if (t < 1.4) return 1;
+  return clamp(1 - (t - 1.4) / 0.28, 0, 1);
+}
+
+function drawAlienGunner(u, b) {
+  const peek = alienPeekAmount(b);
+  if (peek < 0.04) return;
+  const hatchY = -14 * u;
+  const headY = hatchY - peek * 20 * u;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(-80 * u, -90 * u, 160 * u, hatchY + 94 * u);
+  ctx.clip();
+  ctx.translate(-8 * u, headY);
+  ctx.strokeStyle = '#1C6B3A';
+  ctx.lineWidth = 1.6 * u;
+  ctx.beginPath();
+  ctx.moveTo(-2 * u, -9 * u);
+  ctx.quadraticCurveTo(-10 * u, -22 * u, -1 * u, -26 * u);
+  ctx.stroke();
+  ctx.fillStyle = '#8DFF55';
+  ctx.beginPath();
+  ctx.arc(-1 * u, -26 * u, 2.3 * u, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#37C96A';
+  ctx.beginPath();
+  ctx.ellipse(0, 8 * u, 8 * u, 7 * u, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#3DDC7A';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 11 * u, 12.5 * u, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#143022';
+  ctx.lineWidth = 1.5 * u;
+  ctx.stroke();
+  ctx.fillStyle = '#F6FFF2';
+  ctx.beginPath();
+  ctx.ellipse(-4.4 * u, -1.4 * u, 3.4 * u, 4.1 * u, 0, 0, Math.PI * 2);
+  ctx.ellipse(3.5 * u, -1.4 * u, 3.4 * u, 4.1 * u, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#101814';
+  ctx.beginPath();
+  ctx.ellipse(-5.4 * u, -1.2 * u, 1.5 * u, 2.2 * u, 0, 0, Math.PI * 2);
+  ctx.ellipse(2.4 * u, -1.2 * u, 1.5 * u, 2.2 * u, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#14502C';
+  ctx.lineWidth = 1.2 * u;
+  ctx.beginPath();
+  ctx.arc(-0.4 * u, 4.2 * u, 3.1 * u, 0.25, Math.PI - 0.25);
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(-7 * u, 5 * u);
+  ctx.rotate(0.42);
+  ctx.fillStyle = '#4E5964';
+  ctx.fillRect(-20 * u, -1.8 * u, 22 * u, 3.8 * u);
+  ctx.fillStyle = '#C4312C';
+  ctx.fillRect(-8 * u, -3.1 * u, 5 * u, 6.2 * u);
+  if (b.muzzle > 0) {
+    ctx.fillStyle = 'rgba(198, 255, 150, 0.95)';
+    ctx.beginPath();
+    ctx.moveTo(-20 * u, 0);
+    ctx.lineTo(-32 * u, -5 * u);
+    ctx.lineTo(-32 * u, 5 * u);
+    ctx.fill();
+  }
+  ctx.restore();
+  ctx.restore();
+}
+
 function drawBoss(b) {
   const u = G.u;
   const fx = b.flinch > 0 ? Math.sin(b.flinch * 40) * 4 * u : 0;
@@ -7922,8 +8109,9 @@ function drawBoss(b) {
     ctx.translate(Math.sin(G.t * 1.3) * 6 * u, Math.sin(G.t * 2.2) * 7 * u);
     ctx.rotate(Math.sin(G.t * 1.5) * 0.08);
   } else if (b.kind === 'alien') {
-    ctx.translate(0, Math.sin(G.t * 2.6) * 8 * u);
-    ctx.rotate(Math.sin(G.t * 0.9) * 0.12);
+    const peeking = b.pattern === 'peek' && b.phase === 'act';
+    ctx.translate(0, Math.sin(G.t * 2.6) * (peeking ? 2 : 8) * u);
+    ctx.rotate(Math.sin(G.t * 0.9) * (peeking ? 0.02 : 0.12));
   } else if (b.kind === 'gundam') {
     const step = Math.sin(G.t * 5);
     ctx.translate(step * 4 * u, -Math.abs(step) * 6 * u);
@@ -7934,6 +8122,7 @@ function drawBoss(b) {
     if (!paintCenter('f22', 64 * u)) drawRaptor(u * 1.15);
   } else if (b.kind === 'alien') {
     if (!paintCenter('saucer', 62 * u)) drawSaucer(u * 1.2);
+    drawAlienGunner(u, b);
   } else if (b.kind === 'gundam') {
     if (!paintCenter('gundam', 150 * u)) drawGundam(u * 1.15, b.pattern === 'saber');
   } else drawOmochiBoss(u, b);
@@ -8060,6 +8249,23 @@ function drawBolt(bolt) {
     ctx.moveTo(-12 * u, 0);
     ctx.lineTo(-22 * u, -3 * u);
     ctx.lineTo(-22 * u, 3 * u);
+    ctx.fill();
+    ctx.restore();
+  } else if (bolt.kind === 'ray') {
+    ctx.save();
+    ctx.translate(bolt.x, bolt.y);
+    const ang = Math.atan2(bolt.vy || 0, bolt.vx || -1);
+    ctx.rotate(ang);
+    ctx.strokeStyle = 'rgba(176, 255, 120, 0.95)';
+    ctx.lineWidth = 3.2 * u;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(9 * u, 0);
+    ctx.lineTo(-16 * u, 0);
+    ctx.stroke();
+    ctx.fillStyle = '#F4FFE4';
+    ctx.beginPath();
+    ctx.arc(9 * u, 0, 3.1 * u, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   } else {
@@ -8205,6 +8411,90 @@ function drawAirSky() {
   ctx.fill();
 }
 
+function sonicSpread(s) {
+  const p = clamp(s.t / sonicDur(s.phase), 0, 1);
+  if (s.phase === 'back') return p * p * 0.16;
+  if (s.phase === 'hang') return 0.16 + p * 0.2;
+  if (s.phase === 'rush') {
+    const k = clamp(p / 0.62, 0, 1);
+    const e = k * k * (3 - 2 * k);
+    return 0.36 + e * 0.64;
+  }
+  if (s.phase === 'hang2') return 1 - p * 0.4;
+  return 0;
+}
+
+function drawSonicField(s) {
+  const spread = sonicSpread(s);
+  if (spread <= 0.02) return;
+  const u = G.u;
+  const x = s.x;
+  const y = s.y;
+  const diag = Math.max(G.w, G.h);
+  ctx.save();
+  ctx.globalAlpha = 0.34 * spread;
+  ctx.fillStyle = '#D41E12';
+  ctx.fillRect(0, 0, G.w, G.h);
+  ctx.restore();
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const glow = ctx.createRadialGradient(x, y, 6 * u, x, y, diag * (0.08 + spread * 1.2));
+  glow.addColorStop(0, 'rgba(255, 250, 240, ' + (0.75 * spread) + ')');
+  glow.addColorStop(0.16, 'rgba(255, 84, 48, ' + (0.52 * spread) + ')');
+  glow.addColorStop(0.42, 'rgba(190, 20, 16, ' + (0.3 * spread) + ')');
+  glow.addColorStop(1, 'rgba(90, 0, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, G.w, G.h);
+  const wallH = G.h * Math.min(1.05, 0.12 + spread * 1.05);
+  const wall = ctx.createLinearGradient(x - 40 * u, y, x + 28 * u, y);
+  wall.addColorStop(0, 'rgba(255, 40, 24, 0)');
+  wall.addColorStop(0.45, 'rgba(255, 236, 220, ' + (0.92 * Math.min(1, spread * 1.25)) + ')');
+  wall.addColorStop(1, 'rgba(255, 70, 40, 0)');
+  ctx.fillStyle = wall;
+  ctx.fillRect(x - 48 * u, y - wallH / 2, 76 * u, wallH);
+  const coneW = Math.max(80 * u, G.w * (0.15 + spread * 1.05));
+  const coneH = G.h * (0.08 + spread * 0.98);
+  ctx.fillStyle = 'rgba(255, 42, 28, ' + (0.36 * spread) + ')';
+  ctx.beginPath();
+  ctx.moveTo(x + 28 * u, y);
+  ctx.lineTo(x - coneW, y - coneH * 0.5);
+  ctx.lineTo(x - coneW, y + coneH * 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 244, 230, ' + (0.88 * spread) + ')';
+  ctx.lineWidth = 3 * u;
+  ctx.beginPath();
+  ctx.moveTo(x + 24 * u, y);
+  ctx.lineTo(x - coneW * 0.92, y - coneH * 0.46);
+  ctx.moveTo(x + 24 * u, y);
+  ctx.lineTo(x - coneW * 0.92, y + coneH * 0.46);
+  ctx.stroke();
+  for (let i = 0; i < 4; i += 1) {
+    const wob = (s.t * 1.35 + i * 0.23) % 1;
+    const rw = (0.08 + wob * spread) * diag * 0.92;
+    const rh = rw * (0.42 + spread * 0.58);
+    ctx.globalAlpha = (1 - wob) * 0.72 * Math.min(1, spread * 1.3);
+    ctx.strokeStyle = i % 2 === 0 ? 'rgba(255, 248, 236, 0.95)' : 'rgba(255, 72, 44, 0.9)';
+    ctx.lineWidth = (6 - i * 0.8) * u;
+    ctx.beginPath();
+    ctx.ellipse(x - wob * 50 * u, y, Math.max(10 * u, rw), Math.max(8 * u, rh), 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (spread > 0.45) {
+    ctx.globalAlpha = 0.26 * spread;
+    ctx.strokeStyle = 'rgba(255, 214, 196, 0.9)';
+    ctx.lineWidth = 2.2 * u;
+    for (let i = 0; i < 6; i += 1) {
+      const yy = G.h * ((i + 0.5) / 6);
+      ctx.beginPath();
+      ctx.moveTo(0, yy);
+      ctx.lineTo(G.w, y + (yy - y) * 0.12);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 function drawSonicAura(x, y) {
   const u = G.u;
   ctx.save();
@@ -8292,9 +8582,10 @@ function drawAir() {
   if (!pose && dodgeArc() > 0.04) drawAirShipAt(airX(), airLaneY(), 1, 0, true);
   const face = pose && pose.phase === 'return' ? -1 : 1;
   let tilt = null;
-  if (pose && pose.phase === 'back') tilt = 0.1;
-  else if (pose && pose.phase === 'rush') tilt = -0.05;
+  if (pose && pose.phase === 'back') tilt = 0.14;
+  else if (pose && pose.phase === 'rush') tilt = -0.04;
   else if (pose && pose.phase === 'return') tilt = 0.05;
+  if (pose && pose.phase !== 'return') drawSonicField(pose);
   if (pose && pose.phase === 'rush') {
     const u = G.u;
     ctx.save();
@@ -8306,7 +8597,7 @@ function drawAir() {
     ctx.lineTo(Math.max(0, shipX - 30 * u), shipY);
     ctx.stroke();
     ctx.restore();
-    for (let i = 3; i >= 1; i -= 1) drawAirShipAt(shipX - i * 34 * u, shipY, 1, -0.05, true);
+    for (let i = 3; i >= 1; i -= 1) drawAirShipAt(shipX - i * 52 * u, shipY, 1, -0.04, true);
     drawSonicAura(shipX, shipY);
   }
   if (showShip) drawAirShipAt(shipX, shipY, face, tilt, false);
@@ -8361,6 +8652,7 @@ function bindPress(button, kind) {
 bindPress(btnJump, 'jump');
 bindPress(btnBang, 'bang');
 bindPress(btnMissile, 'missile');
+bindPress(btnSonic, 'sonic');
 bindPress(btnPet, 'pet');
 
 document.getElementById('chapter-pick').addEventListener('pointerdown', (e) => {
@@ -8485,6 +8777,9 @@ window.addEventListener('keydown', (e) => {
     } else if (e.code === 'ShiftRight' || e.code === 'KeyF') {
       G.held.bang = true;
       flashButton(btnBang);
+    } else if (e.code === 'KeyX') {
+      G.input.sonic = true;
+      flashButton(btnSonic);
     } else if (e.code === 'KeyZ') {
       G.input.missile = true;
       flashButton(btnMissile);
